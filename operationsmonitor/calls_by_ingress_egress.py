@@ -2,7 +2,7 @@ from libpalladion.scripting.Model import Call, Device
 from libpalladion.utils.logsys import debug, info, error
 
 def match_device(cl,ml,d):
-    if ml == "any":
+    if ml == "ANY":
         return True
     elif not cl == None:
         for c in cl.split(","):
@@ -32,12 +32,12 @@ def run(facade, args):
     try:
         ingress_devices = [n.strip().upper() for n in args["ingress_devs"].split(",")]
     except:
-        ingress_devices = "any"
+        ingress_devices = "ANY"
 
     try:
         egress_devices = [n.strip().upper() for n in args["egress_devs"].split(",")]
     except:
-        egress_devices = "any"
+        egress_devices = "ANY"
 
     devices = {}; devs = facade.getDevices()
 
