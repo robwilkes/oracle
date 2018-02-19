@@ -49,6 +49,9 @@ def run(facade, args):
     start_ts = args.get("start_ts")
     end_ts = args.get("end_ts")
 
+    info('From Timestamp: {}'.format(start_ts))
+    info('To   Timestamp: {}'.format(end_ts))
+
     if args["ingress_devs"].upper() == "*" or args["ingress_devs"].upper() == "ANY":
         ingress_devices = "ANY"
     else:
