@@ -47,29 +47,17 @@ def run(facade, args):
         call_end = call_start + timedelta(seconds=convert_ms2s(call.call_time))
         mos_avg = call.MOSlqe_avg if not call.MOSlqe_avg == None else 4.41
 
-        if not call.ingress_devs is None:
+        if not call.ingress_devs is None and not call.egress_devs is None:
             calllog.append({
-                'deviceid': call.ingress_devs,
+                'ingress_deviceid': call.ingress_devs,
+                'egress_deviceid': call.egress_devs,
                 'timestamp':call_start.strftime('%Y/%m/%d %H:%M:%S'),
                 'mos_avg': mos_avg,
                 'state':'start'
             })
             calllog.append({
-                'deviceid': call.ingress_devs,
-                'timestamp':call_end.strftime('%Y/%m/%d %H:%M:%S'),
-                'mos_avg': mos_avg,
-                'state':'finish'
-            })
-
-        if not call.egress_devs is None:
-            calllog.append({
-                'deviceid': call.egress_devs,
-                'timestamp':call_start.strftime('%Y/%m/%d %H:%M:%S'),
-                'mos_avg': mos_avg,
-                'state':'start'
-            })
-            calllog.append({
-                'deviceid': call.egress_devs,
+                'ingress_deviceid': call.ingress_devs,
+                'egress_deviceid': call.egress_devs,
                 'timestamp':call_end.strftime('%Y/%m/%d %H:%M:%S'),
                 'mos_avg': mos_avg,
                 'state':'finish'
@@ -78,35 +66,54 @@ def run(facade, args):
     results = {}
 
     for call in sorted(calllog, key=lambda k: k['timestamp']):
-        deviceid = call['deviceid'].split(',')[0]
-        cuc = devices[deviceid]['name'].split('-')[0]
+        ingress_cuc = devices[call['ingress_deviceid'].split(',')[0]]['name'].split('-')[0]
+        egress_cuc = devices[call['egress_deviceid'].split(',')[0]]['name'].split('-')[0]
 
-        if not cuc in results:
-            results[cuc] = {'concurrent': 0, 'peak': 0, 'total': 0, 'mos_sum': 0}
+        if egress_cuc == 'AAPT' or egress_cuc == 'VOCUS':
+            direction = 'outbound'
+        else:
+            direction = 'inbound'
 
-        if call['state'] == 'start':
-            results[cuc]['concurrent'] += 1
-            results[cuc]['total'] += 1
-            results[cuc]['mos_sum'] += call['mos_avg']
-        elif call['state'] == 'finish':
-            results[cuc]['concurrent'] -= 1
+        cucs = (ingress_cuc, egress_cuc)
+        
+        for cuc in cucs:
+            if not cuc in results:
+                results[cuc] = {'concurrent': 0, 'peak': 0, 'total': 0, 'inbound': 0, 'outbound': 0, 'mos_sum': 0}
 
-        if results[cuc]['concurrent'] > results[cuc]['peak']:
-            results[cuc]['peak'] = results[cuc]['concurrent']
+            if call['state'] == 'start':
+                results[cuc]['concurrent'] += 1
+                results[cuc]['total'] += 1
+                results[cuc]['mos_sum'] += call['mos_avg']
+                if direction == 'inbound':
+                    results[cuc]['inbound'] += 1
+                elif direction == 'outbound':
+                    results[cuc]['outbound'] += 1
+            elif call['state'] == 'finish':
+                results[cuc]['concurrent'] -= 1
 
+            if results[cuc]['concurrent'] > results[cuc]['peak']:
+                results[cuc]['peak'] = results[cuc]['concurrent']
+                results[cuc]['peak_timestamp'] = call['timestamp']
+    
     results2 = []
     for key, cuc in results.items():
         results2.append({
             'cuc': key,
+            'inbound': cuc['inbound'],
+            'outbound': cuc['outbound'],
             'total': cuc['total'],
             'peak': cuc['peak'],
+            'peak_timestamp': cuc['peak_timestamp'],
             'mos_avg': avg_as_string(cuc['mos_sum'], cuc['total'])
         })
-    
+
     for result in sorted(results2, key=lambda k: k['peak'], reverse=True):
         facade.addResult({
             'cuc': result['cuc'],
+            'inbound': result['inbound'],
+            'outbound': result['outbound'],
             'total': result['total'],
             'peak': result['peak'],
+            'peak_timestamp': result['peak_timestamp'],
             'mos_avg': result['mos_avg']
         })
