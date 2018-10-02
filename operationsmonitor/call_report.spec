@@ -14,9 +14,9 @@
                 <column name="caller" type="VARCHAR(255)" null="false"/>
                 <column name="callee" type="VARCHAR(255)" null="false"/>
                 <column name="start_timestamp" type="datetime" null="false" />
-                <column name="end_timestamp" type="datetime" null="false" />
+                <column name="end_timestamp" type="datetime" null="true" />
                 <column name="duration(sec)" type="INT(11)" null="false" />
-                <column name="code" type="INT(11)" null="false" />
+                <column name="code" type="INT(11)" null="true" />
                 <column name="ingress" type="VARCHAR(255)" null="true" />
                 <column name="egress" type="VARCHAR(255)" null="true" />
                 <column name="pai" type="VARCHAR(255)" null="true" />

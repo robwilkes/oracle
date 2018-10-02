@@ -43,8 +43,9 @@ def run(facade, args):
                                         Call.state_msg == "Finished",
                                         Call.code == 200]):
 
+        call_dur = convert_ms2s(call.call_time)
         call_start = call.setup_start_ts
-        call_end = call_start + timedelta(seconds=convert_ms2s(call.call_time))
+        call_end = call_start + timedelta(seconds=call_dur)
         mos_avg = call.MOSlqe_avg if not call.MOSlqe_avg == None else 4.41
 
         if not call.ingress_devs is None and not call.egress_devs is None:
@@ -53,6 +54,7 @@ def run(facade, args):
                 'egress_deviceid': call.egress_devs,
                 'timestamp':call_start.strftime('%Y/%m/%d %H:%M:%S'),
                 'mos_avg': mos_avg,
+                'call_dur': call_dur,
                 'state':'start'
             })
             calllog.append({
@@ -60,6 +62,7 @@ def run(facade, args):
                 'egress_deviceid': call.egress_devs,
                 'timestamp':call_end.strftime('%Y/%m/%d %H:%M:%S'),
                 'mos_avg': mos_avg,
+                'call_dur': call_dur,
                 'state':'finish'
             })
 
@@ -78,12 +81,13 @@ def run(facade, args):
         
         for cuc in cucs:
             if not cuc in results:
-                results[cuc] = {'concurrent': 0, 'peak': 0, 'total': 0, 'inbound': 0, 'outbound': 0, 'mos_sum': 0}
+                results[cuc] = {'concurrent': 0, 'peak': 0, 'total': 0, 'inbound': 0, 'outbound': 0, 'mos_sum': 0, 'call_time': 0}
 
             if call['state'] == 'start':
                 results[cuc]['concurrent'] += 1
                 results[cuc]['total'] += 1
                 results[cuc]['mos_sum'] += call['mos_avg']
+                results[cuc]['call_time'] += call['call_dur']
                 if direction == 'inbound':
                     results[cuc]['inbound'] += 1
                 elif direction == 'outbound':
@@ -104,6 +108,8 @@ def run(facade, args):
             'total': cuc['total'],
             'peak': cuc['peak'],
             'peak_timestamp': cuc['peak_timestamp'],
+            'avg_dur': '{:.0f}'.format(cuc['call_time']/cuc['total']),
+            'call_min': cuc['call_time']/60,
             'mos_avg': avg_as_string(cuc['mos_sum'], cuc['total'])
         })
 
@@ -115,5 +121,7 @@ def run(facade, args):
             'total': result['total'],
             'peak': result['peak'],
             'peak_timestamp': result['peak_timestamp'],
+            'avg_dur': result['avg_dur'],
+            'call_min': result['call_min'],
             'mos_avg': result['mos_avg']
         })
